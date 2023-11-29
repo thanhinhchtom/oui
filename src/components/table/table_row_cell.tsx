@@ -35,6 +35,7 @@ import React, {
   ReactElement,
   ReactNode,
   TdHTMLAttributes,
+  forwardRef,
 } from 'react';
 import classNames from 'classnames';
 import { CommonProps } from '../common';
@@ -70,6 +71,7 @@ interface OuiTableRowCellSharedPropsShape {
    */
   truncateText?: boolean;
   width?: string | number;
+  ref?: React.ForwardedRef<any>;
 }
 
 interface OuiTableRowCellMobileOptionsShape {
@@ -157,137 +159,148 @@ type Props = CommonProps &
   OuiTableRowCellSharedPropsShape &
   OuiTableRowCellProps;
 
-export const OuiTableRowCell: FunctionComponent<Props> = ({
-  align = LEFT_ALIGNMENT,
-  children,
-  className,
-  truncateText,
-  setScopeRow,
-  showOnHover,
-  textOnly = true,
-  hasActions,
-  isExpander,
-  mobileOptions = {
-    show: true,
-  },
-  // Soon to be deprecated for {...mobileOptions}
-  header,
-  hideForMobile,
-  isMobileHeader,
-  isMobileFullWidth,
-  style,
-  width,
-  ...rest
-}) => {
-  const cellClasses = classNames('ouiTableRowCell', {
-    'ouiTableRowCell--hasActions': hasActions,
-    'ouiTableRowCell--isExpander': isExpander,
-    'ouiTableRowCell--hideForDesktop': mobileOptions.only || isMobileHeader,
-    'ouiTableRowCell--enlargeForMobile':
-      mobileOptions.enlarge || isMobileHeader,
-    'ouiTableRowCell--isMobileFullWidth':
-      mobileOptions.fullWidth || isMobileFullWidth || isMobileHeader,
-  });
+// eslint-disable-next-line local/forward-ref
+export const OuiTableRowCell: FunctionComponent<Props> = forwardRef(
+  (
+    {
+      align = LEFT_ALIGNMENT,
+      children,
+      className,
+      truncateText,
+      setScopeRow,
+      showOnHover,
+      textOnly = true,
+      hasActions,
+      isExpander,
+      mobileOptions = {
+        show: true,
+      },
+      // Soon to be deprecated for {...mobileOptions}
+      header,
+      hideForMobile,
+      isMobileHeader,
+      isMobileFullWidth,
+      style,
+      width,
+      ...rest
+    },
+    ref
+  ) => {
+    // ref = useRef();
 
-  const contentClasses = classNames('ouiTableCellContent', className, {
-    'ouiTableCellContent--alignRight': align === RIGHT_ALIGNMENT,
-    'ouiTableCellContent--alignCenter': align === CENTER_ALIGNMENT,
-    'ouiTableCellContent--showOnHover': showOnHover,
-    'ouiTableCellContent--truncateText': truncateText,
-    // We're doing this rigamarole instead of creating `ouiTableCellContent--textOnly` for BWC
-    // purposes for the time-being.
-    'ouiTableCellContent--overflowingContent': textOnly !== true,
-  });
+    const cellClasses = classNames('ouiTableRowCell', {
+      'ouiTableRowCell--hasActions': hasActions,
+      'ouiTableRowCell--isExpander': isExpander,
+      'ouiTableRowCell--hideForDesktop': mobileOptions.only || isMobileHeader,
+      'ouiTableRowCell--enlargeForMobile':
+        mobileOptions.enlarge || isMobileHeader,
+      'ouiTableRowCell--isMobileFullWidth':
+        mobileOptions.fullWidth || isMobileFullWidth || isMobileHeader,
+    });
 
-  const mobileContentClasses = classNames('ouiTableCellContent', className, {
-    'ouiTableCellContent--alignRight':
-      mobileOptions.align === RIGHT_ALIGNMENT || align === RIGHT_ALIGNMENT,
-    'ouiTableCellContent--alignCenter':
-      mobileOptions.align === CENTER_ALIGNMENT || align === RIGHT_ALIGNMENT,
-    'ouiTableCellContent--showOnHover':
-      mobileOptions.showOnHover || showOnHover,
-    'ouiTableCellContent--truncateText':
-      mobileOptions.truncateText || truncateText,
-    // We're doing this rigamarole instead of creating `ouiTableCellContent--textOnly` for BWC
-    // purposes for the time-being.
-    'ouiTableCellContent--overflowingContent':
-      mobileOptions.textOnly !== true || textOnly !== true,
-  });
+    const contentClasses = classNames('ouiTableCellContent', className, {
+      'ouiTableCellContent--alignRight': align === RIGHT_ALIGNMENT,
+      'ouiTableCellContent--alignCenter': align === CENTER_ALIGNMENT,
+      'ouiTableCellContent--showOnHover': showOnHover,
+      'ouiTableCellContent--truncateText': truncateText,
+      // We're doing this rigamarole instead of creating `ouiTableCellContent--textOnly` for BWC
+      // purposes for the time-being.
+      'ouiTableCellContent--overflowingContent': textOnly !== true,
+    });
 
-  const childClasses = classNames({
-    ouiTableCellContent__text: textOnly === true,
-    ouiTableCellContent__hoverItem: showOnHover,
-  });
+    const mobileContentClasses = classNames('ouiTableCellContent', className, {
+      'ouiTableCellContent--alignRight':
+        mobileOptions.align === RIGHT_ALIGNMENT || align === RIGHT_ALIGNMENT,
+      'ouiTableCellContent--alignCenter':
+        mobileOptions.align === CENTER_ALIGNMENT || align === RIGHT_ALIGNMENT,
+      'ouiTableCellContent--showOnHover':
+        mobileOptions.showOnHover || showOnHover,
+      'ouiTableCellContent--truncateText':
+        mobileOptions.truncateText || truncateText,
+      // We're doing this rigamarole instead of creating `ouiTableCellContent--textOnly` for BWC
+      // purposes for the time-being.
+      'ouiTableCellContent--overflowingContent':
+        mobileOptions.textOnly !== true || textOnly !== true,
+    });
 
-  const widthValue =
-    useIsWithinBreakpoints(['xs', 's', 'm']) && mobileOptions.width
-      ? mobileOptions.width
-      : width;
+    const childClasses = classNames({
+      ouiTableCellContent__text: textOnly === true,
+      ouiTableCellContent__hoverItem: showOnHover,
+    });
 
-  const styleObj = resolveWidthAsStyle(style, widthValue);
+    const widthValue =
+      useIsWithinBreakpoints(['xs', 's', 'm']) && mobileOptions.width
+        ? mobileOptions.width
+        : width;
 
-  function modifyChildren(children: ReactNode) {
-    let modifiedChildren = children;
+    const styleObj = resolveWidthAsStyle(style, widthValue);
 
-    if (textOnly === true) {
-      modifiedChildren = <span className={childClasses}>{children}</span>;
-    } else if (React.isValidElement(children)) {
-      modifiedChildren = React.Children.map(
-        children,
-        (child: ReactElement<CommonProps>) =>
-          React.cloneElement(child, {
-            className: classNames(child.props.className, childClasses),
-          })
-      );
+    function modifyChildren(children: ReactNode) {
+      let modifiedChildren = children;
+
+      if (textOnly === true) {
+        modifiedChildren = <span className={childClasses}>{children}</span>;
+      } else if (React.isValidElement(children)) {
+        modifiedChildren = React.Children.map(
+          children,
+          (child: ReactElement<CommonProps>) =>
+            React.cloneElement(child, {
+              className: classNames(child.props.className, childClasses),
+            })
+        );
+      }
+
+      return modifiedChildren;
     }
 
-    return modifiedChildren;
-  }
+    const childrenNode = modifyChildren(children);
 
-  const childrenNode = modifyChildren(children);
+    const hideForMobileClasses = 'ouiTableRowCell--hideForMobile';
+    const showForMobileClasses = 'ouiTableRowCell--hideForDesktop';
 
-  const hideForMobileClasses = 'ouiTableRowCell--hideForMobile';
-  const showForMobileClasses = 'ouiTableRowCell--hideForDesktop';
-
-  const Element = setScopeRow ? 'th' : 'td';
-  const sharedProps = {
-    scope: setScopeRow ? 'row' : undefined,
-    style: styleObj,
-    ...rest,
-  };
-  if (mobileOptions.show === false || hideForMobile) {
-    return (
-      <Element
-        className={`${cellClasses} ${hideForMobileClasses}`}
-        {...sharedProps}>
-        <div className={contentClasses}>{childrenNode}</div>
-      </Element>
-    );
-  } else {
-    return (
-      <Element className={cellClasses} {...sharedProps}>
-        {/* Mobile-only header */}
-        {(mobileOptions.header || header) && !isMobileHeader && (
-          <div
-            className={`ouiTableRowCell__mobileHeader ${showForMobileClasses}`}>
-            {mobileOptions.header || header}
+    const Element = setScopeRow ? 'th' : 'td';
+    const sharedProps = {
+      scope: setScopeRow ? 'row' : undefined,
+      style: styleObj,
+      ...rest,
+    };
+    if (mobileOptions.show === false || hideForMobile) {
+      return (
+        <Element
+          className={`${cellClasses} ${hideForMobileClasses}`}
+          {...sharedProps}>
+          <div ref={ref} className={contentClasses}>
+            {childrenNode}
           </div>
-        )}
+        </Element>
+      );
+    } else {
+      return (
+        <Element className={cellClasses} {...sharedProps}>
+          {/* Mobile-only header */}
+          {(mobileOptions.header || header) && !isMobileHeader && (
+            <div
+              className={`ouiTableRowCell__mobileHeader ${showForMobileClasses}`}>
+              {mobileOptions.header || header}
+            </div>
+          )}
 
-        {/* Content depending on mobile render existing */}
-        {mobileOptions.render ? (
-          <Fragment>
-            <div className={`${mobileContentClasses} ${showForMobileClasses}`}>
-              {modifyChildren(mobileOptions.render)}
-            </div>
-            <div className={`${contentClasses} ${hideForMobileClasses}`}>
-              {childrenNode}
-            </div>
-          </Fragment>
-        ) : (
-          <div className={contentClasses}>{childrenNode}</div>
-        )}
-      </Element>
-    );
+          {/* Content depending on mobile render existing */}
+          {mobileOptions.render ? (
+            <Fragment>
+              <div
+                className={`${mobileContentClasses} ${showForMobileClasses}`}>
+                {modifyChildren(mobileOptions.render)}
+              </div>
+              <div className={`${contentClasses} ${hideForMobileClasses}`}>
+                {childrenNode}
+              </div>
+            </Fragment>
+          ) : (
+            <div className={contentClasses}>{childrenNode}</div>
+          )}
+        </Element>
+      );
+    }
   }
-};
+);

@@ -34,6 +34,8 @@ import React, {
   HTMLAttributes,
   ReactNode,
   ReactElement,
+  RefObject,
+  createRef,
 } from 'react';
 import classNames from 'classnames';
 import moment from 'moment';
@@ -314,6 +316,7 @@ interface State<T> {
   initialSelectionRendered: boolean;
   selection: T[];
   currentBreakpoint: OuiBreakpointSize | undefined;
+  actionRef: RefObject<any>;
 }
 
 interface SortOptions {
@@ -382,6 +385,7 @@ export class OuiBasicTable<T extends {} = any> extends Component<
       currentBreakpoint: getBreakpoint(
         typeof window === 'undefined' ? -Infinity : window.innerWidth
       ),
+      actionRef: createRef(),
     };
   }
 
@@ -389,6 +393,10 @@ export class OuiBasicTable<T extends {} = any> extends Component<
     if (this.props.loading && this.tbody) this.addLoadingListeners(this.tbody);
     this.getInitialSelection();
     window.addEventListener('resize', this.functionToCallOnWindowResize);
+    if (this.state.actionRef.current) {
+      const divSize = this.state.actionRef.current.getBoundingClientRect();
+      console.log('div size:', divSize.width, 'x', divSize.height);
+    }
   }
 
   componentDidUpdate(prevProps: OuiBasicTableProps<T>) {
@@ -1228,8 +1236,9 @@ export class OuiBasicTable<T extends {} = any> extends Component<
     if (actualActions.length > 2) {
       // if any of the actions `isPrimary`, add them inline as well, but only the first 2
       const primaryActions = actualActions.filter((o) => o.isPrimary);
-      const numItemMax = this.state.currentBreakpoint === 'm' ? 0 : 2;
-      actualActions = primaryActions.slice(0, numItemMax);
+      // const numItemMax = this.state.currentBreakpoint === 'm' ? 0 : 2;
+      // actualActions = primaryActions.slice(0, numItemMax);
+      actualActions = primaryActions.slice(0, 2);
 
       // if we have more than 1 action, we don't show them all in the cell, instead we
       // put them all in a popover tool. This effectively means we can only have a maximum
@@ -1262,13 +1271,15 @@ export class OuiBasicTable<T extends {} = any> extends Component<
     );
 
     const key = `record_actions_${itemId}_${columnIndex}`;
+
     return (
       <OuiTableRowCell
         showOnHover={true}
         key={key}
         align="right"
         textOnly={false}
-        hasActions={true}>
+        hasActions={true}
+        ref={this.state.actionRef}>
         {tools}
       </OuiTableRowCell>
     );
